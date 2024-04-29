@@ -64,6 +64,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
 //
   void _navigateToIndex(int index) {
     setState(() {

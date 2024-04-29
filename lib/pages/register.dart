@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'login.dart';
+
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
 
@@ -24,7 +26,6 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
       body: SingleChildScrollView(
         padding: EdgeInsets.all(20),
         child: Column(
@@ -118,11 +119,12 @@ class _RegisterPageState extends State<RegisterPage> {
                       final DateTime? picked = await showDatePicker(
                         context: context,
                         initialDate: DateTime.now(),
-                        firstDate: DateTime(1900,1 ,1),
+                        firstDate: DateTime(1900, 1, 1),
                         lastDate: DateTime.now(),
                       );
                       if (picked != null)
-                        dobController.text = DateFormat('dd/MM/yyyy').format(picked);
+                        dobController.text =
+                            DateFormat('dd/MM/yyyy').format(picked);
                     },
                   ),
                 ),
@@ -212,6 +214,58 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  void _registerUser() {
+  void _registerUser() async {
+    final String name = nameController.text.trim();
+    final String phone = phoneController.text.trim();
+    final String email = emailController.text.trim();
+    final String cpf = cpfController.text.trim();
+    final String password = passwordController.text.trim();
+    final String dob = dobController.text.trim();
+
+    if (name.isEmpty || phone.isEmpty || email.isEmpty || cpf.isEmpty || password.isEmpty || dob.isEmpty) {
+      _showErrorSnackBar('Todos os campos são obrigatórios');
+      return;
+    }
+
+    if (!_isValidEmail(email)) {
+      _showErrorSnackBar('Formato de e-mail inválido');
+      return;
+    }
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('name', name);
+    await prefs.setString('phone', phone);
+    await prefs.setString('email', email);
+    await prefs.setString('cpf', cpf);
+    await prefs.setString('password', password);
+    await prefs.setString('dob', dob);
+    await prefs.setString('gender', genderSelected ?? '');
+    await prefs.setBool('emailNotification', emailNotification);
+    await prefs.setBool('phoneNotification', phoneNotification);
+
+    _showSuccessSnackBar('Cadastro realizado com sucesso');
+  }
+
+  bool _isValidEmail(String email) {
+    final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegExp.hasMatch(email);
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 }
