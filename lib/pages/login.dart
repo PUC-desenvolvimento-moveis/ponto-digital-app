@@ -121,26 +121,26 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _login() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? savedEmail = prefs.getString('email');
-    String? savedPassword = prefs.getString('password');
+void _login() async {
+  final String email = emailController.text.trim();
+  final String password = passwordController.text.trim();
 
-    String enteredEmail = emailController.text.trim();
-    String enteredPassword = passwordController.text.trim();
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String userKey = 'user_$email';
+  String storedPassword = prefs.getString('$userKey:password') ?? '';
+  String storedName = prefs.getString('$userKey:name') ?? ''; // Adicionando esta linha
 
-    if (savedEmail == enteredEmail && savedPassword == enteredPassword) {
-      String savedName = prefs.getString('name') ?? '';
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => HomePageApp(name: savedName),
-        ),
-      );
-    } else {
-      _showErrorSnackBar('Email ou senha incorretos');
-    }
+  if (storedPassword.isNotEmpty && storedPassword == password) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => HomePageApp(name: storedName)), // Passando o nome do usuário
+    );
+  } else {
+    _showErrorSnackBar('Email ou senha incorretos');
   }
+}
+
+
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(

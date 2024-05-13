@@ -40,7 +40,6 @@ class _HomePageAppState extends State<HomePageApp> {
       appBar: AppBar(
         title: Text('Bem-vindo, ${widget.name}'),
         backgroundColor: Colors.blue,
-        automaticallyImplyLeading: false,
         actions: <Widget>[
           IconButton(
             icon: Icon(Icons.logout),

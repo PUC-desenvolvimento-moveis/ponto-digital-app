@@ -222,7 +222,12 @@ class _RegisterPageState extends State<RegisterPage> {
     final String password = passwordController.text.trim();
     final String dob = dobController.text.trim();
 
-    if (name.isEmpty || phone.isEmpty || email.isEmpty || cpf.isEmpty || password.isEmpty || dob.isEmpty) {
+    if (name.isEmpty ||
+        phone.isEmpty ||
+        email.isEmpty ||
+        cpf.isEmpty ||
+        password.isEmpty ||
+        dob.isEmpty) {
       _showErrorSnackBar('Todos os campos são obrigatórios');
       return;
     }
@@ -233,15 +238,16 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('name', name);
-    await prefs.setString('phone', phone);
-    await prefs.setString('email', email);
-    await prefs.setString('cpf', cpf);
-    await prefs.setString('password', password);
-    await prefs.setString('dob', dob);
-    await prefs.setString('gender', genderSelected ?? '');
-    await prefs.setBool('emailNotification', emailNotification);
-    await prefs.setBool('phoneNotification', phoneNotification);
+    String userKey = 'user_$email'; // Utilizando o e-mail como parte da chave
+    await prefs.setString('$userKey:name', name);
+    await prefs.setString('$userKey:phone', phone);
+    await prefs.setString('$userKey:email', email);
+    await prefs.setString('$userKey:cpf', cpf);
+    await prefs.setString('$userKey:password', password);
+    await prefs.setString('$userKey:dob', dob);
+    await prefs.setString('$userKey:gender', genderSelected ?? '');
+    await prefs.setBool('$userKey:emailNotification', emailNotification);
+    await prefs.setBool('$userKey:phoneNotification', phoneNotification);
 
     _showSuccessSnackBar('Cadastro realizado com sucesso');
   }
