@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:http/http.dart' as http;
+import 'dart:convert'; // Importa jsonDecode e jsonEncode
+
 import 'login.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -214,43 +217,66 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+
+
+
   void _registerUser() async {
-    final String name = nameController.text.trim();
-    final String phone = phoneController.text.trim();
-    final String email = emailController.text.trim();
-    final String cpf = cpfController.text.trim();
-    final String password = passwordController.text.trim();
-    final String dob = dobController.text.trim();
+  final String name = nameController.text.trim();
+  final String phone = phoneController.text.trim();
+  final String email = emailController.text.trim();
+  final String cpf = cpfController.text.trim();
+  final String password = passwordController.text.trim();
+  final String dob = dobController.text.trim();
 
-    if (name.isEmpty ||
-        phone.isEmpty ||
-        email.isEmpty ||
-        cpf.isEmpty ||
-        password.isEmpty ||
-        dob.isEmpty) {
-      _showErrorSnackBar('Todos os campos são obrigatórios');
-      return;
-    }
-
-    if (!_isValidEmail(email)) {
-      _showErrorSnackBar('Formato de e-mail inválido');
-      return;
-    }
-
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String userKey = 'user_$email'; // Utilizando o e-mail como parte da chave
-    await prefs.setString('$userKey:name', name);
-    await prefs.setString('$userKey:phone', phone);
-    await prefs.setString('$userKey:email', email);
-    await prefs.setString('$userKey:cpf', cpf);
-    await prefs.setString('$userKey:password', password);
-    await prefs.setString('$userKey:dob', dob);
-    await prefs.setString('$userKey:gender', genderSelected ?? '');
-    await prefs.setBool('$userKey:emailNotification', emailNotification);
-    await prefs.setBool('$userKey:phoneNotification', phoneNotification);
-
-    _showSuccessSnackBar('Cadastro realizado com sucesso');
+  if (name.isEmpty ||
+      phone.isEmpty ||
+      email.isEmpty ||
+      cpf.isEmpty ||
+      password.isEmpty ||
+      dob.isEmpty) {
+    _showErrorSnackBar('Todos os campos são obrigatórios');
+    return;
   }
+
+  if (!_isValidEmail(email)) {
+    _showErrorSnackBar('Formato de e-mail inválido');
+    return;
+  }
+
+  // URL da API
+  final String apiUrl = 'http://localhost:8000/v1/register';
+
+  // Dados a serem enviados para a API
+  final Map<String, dynamic> userData = {
+    'name': name,
+    'email': email,
+    'password': password,
+    'telefene': phone,
+    'cpf': cpf,
+  };
+
+  // Fazer a requisição POST
+  try {
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(userData),
+    );
+
+    if (response.statusCode == 201) {
+      _showSuccessSnackBar('Cadastro realizado com sucesso');
+    } else {
+      final responseBody = jsonDecode(response.body);
+      _showErrorSnackBar(responseBody['message'] ?? 'Erro ao cadastrar usuário');
+    }
+  } catch (error) {
+    _showErrorSnackBar('Erro de rede: $error');
+  }
+}
+
+  
 
   bool _isValidEmail(String email) {
     final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
