@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home.dart';
 import 'register.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';  // Para trabalhar com JSO
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -121,22 +123,31 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  
+
 void _login() async {
   final String email = emailController.text.trim();
   final String password = passwordController.text.trim();
 
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  String userKey = 'user_$email';
-  String storedPassword = prefs.getString('$userKey:password') ?? '';
-  String storedName = prefs.getString('$userKey:name') ?? ''; // Adicionando esta linha
+  final url = 'http://localhost:8000/v1/login';
+  final headers = {'Content-Type': 'application/json'};
+  final body = json.encode({'email': email, 'password': password});
 
-  if (storedPassword.isNotEmpty && storedPassword == password) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => HomePageApp(name: storedName)), // Passando o nome do usuário
-    );
-  } else {
-    _showErrorSnackBar('Email ou senha incorretos');
+  try {
+    final response = await http.post(Uri.parse(url), headers: headers, body: body);
+    if (response.statusCode == 201) {
+      final responseData = json.decode(response.body);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePageApp(name: email)),
+      );
+    } 
+    else {
+      _showErrorSnackBar('Erro ao conectar conta,login ou senha invalidos');
+    }
+  } catch (error) {  
+    _showErrorSnackBar('Erro de rede: $error');
   }
 }
 

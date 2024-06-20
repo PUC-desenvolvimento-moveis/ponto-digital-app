@@ -267,6 +267,10 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (response.statusCode == 201) {
       _showSuccessSnackBar('Cadastro realizado com sucesso');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginPage()),
+      );
     } else {
       final responseBody = jsonDecode(response.body);
       _showErrorSnackBar(responseBody['message'] ?? 'Erro ao cadastrar usuário');
