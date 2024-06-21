@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:timer_builder/timer_builder.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class HomePageApp extends StatefulWidget {
   final String name;
@@ -25,7 +27,7 @@ class _HomePageAppState extends State<HomePageApp> {
     _initSharedPreferences();
   }
 
-  void _initSharedPreferences() async {
+   void _initSharedPreferences() async {
     _prefs = await SharedPreferences.getInstance();
     _loadJourneyHistory();
   }
@@ -55,7 +57,7 @@ class _HomePageAppState extends State<HomePageApp> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (_isJourneyStarted) {
                   _stopwatch!.stop();
                   _journeyHistory.add('Saída: ${_getCurrentDateTime()}');
@@ -64,6 +66,7 @@ class _HomePageAppState extends State<HomePageApp> {
                     _isJourneyStarted = false;
                   });
                 } else {
+                  await apropriar_hora_inicial(context, widget.name); // Call function when starting journey
                   _stopwatch!.start();
                   _journeyHistory.add('Entrada: ${_getCurrentDateTime()}');
                   setState(() {
@@ -146,7 +149,122 @@ class _HomePageAppState extends State<HomePageApp> {
     Navigator.pushReplacementNamed(context, '/');
   }
 
-  void _saveJourneyHistory() {
+   void _saveJourneyHistory() {
     _prefs.setStringList('journeyHistory', _journeyHistory);
+  } 
+
+  Future<void> apropriar_hora_inicial(BuildContext context, String name) async {
+  try {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('authToken'); // Retrieve the token
+    print('Token: $token');
+
+    if (token == null) {
+      _showErrorSnackBar(context, 'Erro: Token de autenticação não encontrado.');
+      return;
+    }
+
+    int userId = 0;
+    final urlByEmail = 'http://localhost:8000/api/users/byemail/$name';
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token' // Include the token in the headers
+    };
+
+    final response = await http.get(Uri.parse(urlByEmail), headers: headers);
+    print('ByEmail response status: ${response.statusCode}');
+    print('ByEmail response body: ${response.body}');
+
+    if (response.statusCode == 201) {
+      final responseData = json.decode(response.body);
+      userId = responseData['id'];
+    } else {
+      _showErrorSnackBar(context, 'Erro ao buscar o usuário.');
+      return;
+    }
+
+    final urlInicial = 'http://localhost:8000/api/pontos/inicial';
+    final body = json.encode({'user_id': userId});
+    final responseApropriacao =
+        await http.post(Uri.parse(urlInicial), headers: headers, body: body);
+
+    print('Apropriar response status: ${responseApropriacao.statusCode}');
+    print('Apropriar response body: ${responseApropriacao.body}');
+
+    if (responseApropriacao.statusCode == 201) {
+      // Handle successful appropriation
+      _showSuccessSnackBar(context, 'Apropriação realizada com sucesso!');
+    } else {
+      // Handle appropriation error
+      _showErrorSnackBar(context, 'Erro ao realizar a apropriação.');
+    }
+  } catch (error) {
+    print('Apropriar error: $error');
+    _showErrorSnackBar(context, 'Erro de rede: $error');
+  }
+}
+
+
+Future<void> apropriar_hora_final(BuildContext context, String name) async {
+  try {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('authToken'); // Retrieve the token
+    print('Token: $token');
+
+    if (token == null) {
+      _showErrorSnackBar(context, 'Erro: Token de autenticação não encontrado.');
+      return;
+    }
+
+    int userId = 0;
+    final urlByEmail = 'http://localhost:8000/api/users/byemail/$name';
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token' // Include the token in the headers
+    };
+
+    final response = await http.get(Uri.parse(urlByEmail), headers: headers);
+    print('ByEmail response status: ${response.statusCode}');
+    print('ByEmail response body: ${response.body}');
+
+    if (response.statusCode == 201) {
+      final responseData = json.decode(response.body);
+      userId = responseData['id'];
+    } else {
+      _showErrorSnackBar(context, 'Erro ao buscar o usuário.');
+      return;
+    }
+
+    final urlInicial = 'http://localhost:8000/api/pontos/final';
+    final body = json.encode({'user_id': userId});
+    final responseApropriacao =
+        await http.post(Uri.parse(urlInicial), headers: headers, body: body);
+
+    print('Apropriar response status: ${responseApropriacao.statusCode}');
+    print('Apropriar response body: ${responseApropriacao.body}');
+
+    if (responseApropriacao.statusCode == 201) {
+      // Handle successful appropriation
+      _showSuccessSnackBar(context, 'Apropriação realizada com sucesso!');
+    } else {
+      // Handle appropriation error
+      _showErrorSnackBar(context, 'Erro ao realizar a apropriação.');
+    }
+  } catch (error) {
+    print('Apropriar error: $error');
+    _showErrorSnackBar(context, 'Erro de rede: $error');
+  }
+}
+
+  void _showErrorSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
+  void _showSuccessSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
+    );
   }
 }
