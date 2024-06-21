@@ -137,19 +137,28 @@ void _login() async {
     final response = await http.post(Uri.parse(url), headers: headers, body: body);
     if (response.statusCode == 201) {
       final responseData = json.decode(response.body);
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePageApp(name: email)),
-      );
-    } 
-    else {
-      _showErrorSnackBar('Erro ao conectar conta,login ou senha invalidos');
+      String? token = responseData['access_token'];
+
+      if (token != null) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('authToken', token); // Save the token
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePageApp(name: email)),
+        );
+      } else {
+        _showErrorSnackBar('Token não encontrado na resposta.');
+      }
+    } else {
+      _showErrorSnackBar('Erro ao conectar conta, login ou senha inválidos');
     }
-  } catch (error) {  
+  } catch (error) {
+    print('Login error: $error');
     _showErrorSnackBar('Erro de rede: $error');
   }
 }
+
 
 
 
