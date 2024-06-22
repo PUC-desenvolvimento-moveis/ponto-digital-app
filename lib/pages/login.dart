@@ -145,7 +145,7 @@ void _login() async {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => HomePageApp(name: email)),
+          MaterialPageRoute(builder: (context) => HomePageApp(email: email)),
         );
       } else {
         _showErrorSnackBar('Token não encontrado na resposta.');
