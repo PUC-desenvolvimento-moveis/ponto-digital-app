@@ -32,7 +32,7 @@ class _HomePageAppState extends State<HomePageApp> {
   Stopwatch? _stopwatch;
   List<String> _journeyHistory = [];
   late SharedPreferences _prefs;
-  late String _userName;
+  late String _userName="user";
 
   @override
   void initState() {
