@@ -16,6 +16,7 @@ class HomePageApp extends StatefulWidget {
 
 class _HomePageAppState extends State<HomePageApp> {
   bool _isJourneyStarted = false;
+  bool _ponto_final = false;
   Stopwatch? _stopwatch;
   List<String> _journeyHistory = [];
   late SharedPreferences _prefs;
@@ -24,16 +25,6 @@ class _HomePageAppState extends State<HomePageApp> {
   void initState() {
     super.initState();
     _stopwatch = Stopwatch();
-    _initSharedPreferences();
-  }
-
-  void _initSharedPreferences() async {
-    _prefs = await SharedPreferences.getInstance();
-    _loadJourneyHistory();
-  }
-
-  void _loadJourneyHistory() {
-    _journeyHistory = _prefs.getStringList('journeyHistory') ?? [];
   }
 
   @override
@@ -59,24 +50,13 @@ class _HomePageAppState extends State<HomePageApp> {
           children: <Widget>[
             ElevatedButton(
               onPressed: () {
-                if (_isJourneyStarted) {
+                if (_isJourneyStarted /* && !_ponto_final */) {
                   _stopwatch!.stop();
                   _journeyHistory.add('Saída: ${_getCurrentDateTime()}');
-                  _saveJourneyHistory();
-                  setState(() {
-                    _isJourneyStarted = false;
-                  });
-
-                  // Call apropriar_hora_final when ending the journey
                   apropriar_hora_final(context);
                 } else {
                   _stopwatch!.start();
                   _journeyHistory.add('Entrada: ${_getCurrentDateTime()}');
-                  setState(() {
-                    _isJourneyStarted = true;
-                  });
-
-                  // Call apropriar_hora when starting the journey
                   apropriar_hora_inicial(context, widget.name);
                 }
               },
@@ -89,13 +69,6 @@ class _HomePageAppState extends State<HomePageApp> {
                 style: TextStyle(fontSize: 18, color: Colors.white),
               ),
             ),
-            SizedBox(height: 20),
-            Text(
-              _getCurrentDate(),
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -155,9 +128,9 @@ class _HomePageAppState extends State<HomePageApp> {
     Navigator.pushReplacementNamed(context, '/');
   }
 
-  void _saveJourneyHistory() {
+/*   void _saveJourneyHistory() {
     _prefs.setStringList('journeyHistory', _journeyHistory);
-  }
+  } */
 
   Future<void> apropriar_hora_inicial(BuildContext context, String name) async {
     try {
@@ -204,6 +177,9 @@ class _HomePageAppState extends State<HomePageApp> {
         int pontoId = response_json['data']['id'];
         await prefs.setInt('pontoId', pontoId);
         await prefs.setInt('userId', userId);
+        setState(() {
+          _isJourneyStarted = true;
+        });
       } else {
         // Handle appropriation error
         _showErrorSnackBar(context, 'Erro ao realizar a apropriação.');
@@ -259,6 +235,13 @@ class _HomePageAppState extends State<HomePageApp> {
         // Handle successful final appropriation
         _showSuccessSnackBar(
             context, 'Apropriação final realizada com sucesso!');
+        setState(() {
+          _isJourneyStarted = false;
+        });
+
+        setState(() {
+          _ponto_final = false;
+        });
       } else {
         // Handle final appropriation error
         _showErrorSnackBar(context, 'Erro ao realizar a apropriação final.');
