@@ -25,7 +25,7 @@ class _HorasApropriadasPorPeriodoPageState
   void initState() {
     super.initState();
     _dataSelecionada_inicial = ""; // Inicializa sem data selecionada
-    late String _dataSelecionada_final = "";
+    _dataSelecionada_final = ""; // Inicializa sem data selecionada
     _totalHorasFuture = Future.value(""); // Inicializa com um future vazio
   }
 
@@ -46,7 +46,7 @@ class _HorasApropriadasPorPeriodoPageState
 
   Future<String> _getTotalHoras() async {
     if (_dataSelecionada_inicial.isEmpty && _dataSelecionada_final.isEmpty)
-      return '00:00:00'; // Evita chamadas desnecessárias
+      return '00:00'; // Evita chamadas desnecessárias
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('authToken');
     final headers = {
@@ -64,7 +64,13 @@ class _HorasApropriadasPorPeriodoPageState
         headers: headers);
     final data = jsonDecode(response.body);
     print(data);
-    return data['total_horas_trabalhadas'];
+
+    // Formata a string para exibir apenas horas e minutos
+    String totalHoras = data['total_horas_trabalhadas'];
+    List<String> partes = totalHoras.split(':');
+    String horasEMinutos = '${partes[0]}:${partes[1]}';
+
+    return horasEMinutos;
   }
 
   Future<List<dynamic>> _getListaApropriacoesByPeriodo() async {
@@ -121,107 +127,123 @@ class _HorasApropriadasPorPeriodoPageState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Horas Apropriadas por Periodo'),
+        title: Text('Horas Apropriadas por Período'),
+        backgroundColor: Colors.blue,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text('slecione as datas:'),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                ).then((value) {
-                  if (value != null) {
-                    setState(() {
-                      _dataSelecionada_inicial = value.toString();
-                      // Atualiza a data selecionada
-                      _totalHorasFuture =
-                          _getTotalHoras(); // Recalcula as horas com base na nova data
-                    });
-                  }
-                });
-              },
-              child: Text('Selecionar Data Inicial'),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                ).then((value) {
-                  if (value != null) {
-                    setState(() {
-                      _dataSelecionada_final = value.toString();
-                      // Atualiza a data selecionada
-                      _totalHorasFuture =
-                          _getTotalHoras(); // Recalcula as horas com base na nova data
-                    });
-                  }
-                });
-              },
-              child: Text('Selecionar Data Final'),
-            ),
-            SizedBox(height: 20),
-            FutureBuilder<String>(
-              future: _totalHorasFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
-                } else if (snapshot.hasError) {
-                  return Text('Erro ao buscar total de horas');
-                } else {
-                  return Text('Total de horas: ${snapshot.data}');
-                }
-              },
-            ),
-            SizedBox(height: 20),
-            FutureBuilder<List<dynamic>>(
-  future: _getListaApropriacoesByPeriodo(),
-  builder: (context, snapshot) {
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return CircularProgressIndicator();
-    } else if (snapshot.hasError) {
-      return Text('Erro ao buscar lista de apropriações');
-    } else {
-      List<dynamic> apropriacoes = snapshot.data!;
-      return Expanded(
-        child: ListView(
-          shrinkWrap: true,
-          children: apropriacoes.map((apropriacao) {
-            return Card(
-              elevation: 3,
-              margin:
-                  EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              child: ListTile(
-                title: Text('Apropriação ${apropriacao['id']}'),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                        'Data inicial: ${apropriacao['data_hora_inicial']}'),
-                    Text(
-                        'Data final: ${apropriacao['data_hora_final']}'),
-                    Text('Tipo: ${apropriacao['tipo']}'),
-                  ],
-                ),
+      body: Padding(
+        padding: const EdgeInsets.only(top: 16.0),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Text('Selecione as datas:'),
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  ).then((value) {
+                    if (value != null) {
+                      setState(() {
+                        _dataSelecionada_inicial = value.toString();
+                        // Atualiza a data selecionada
+                        _totalHorasFuture =
+                            _getTotalHoras(); // Recalcula as horas com base na nova data
+                      });
+                    }
+                  });
+                },
+                child: Text('Selecionar Data Inicial'),
               ),
-            );
-          }).toList(),
-        ),
-      );
-    }
-  },
-),
-          ],
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  ).then((value) {
+                    if (value != null) {
+                      setState(() {
+                        _dataSelecionada_final = value.toString();
+                        // Atualiza a data selecionada
+                        _totalHorasFuture =
+                            _getTotalHoras(); // Recalcula as horas com base na nova data
+                      });
+                    }
+                  });
+                },
+                child: Text('Selecionar Data Final'),
+              ),
+              SizedBox(height: 20),
+              FutureBuilder<String>(
+                future: _totalHorasFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return Text('Erro ao buscar total de horas');
+                  } else {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.access_time), // Ícone de relógio
+                        SizedBox(width: 5),
+                        Text(
+                          'Tempo total: ${snapshot.data}',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+                },
+              ),
+              SizedBox(height: 20),
+              FutureBuilder<List<dynamic>>(
+                future: _getListaApropriacoesByPeriodo(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return Text('Erro ao buscar lista de apropriações');
+                  } else {
+                    List<dynamic> apropriacoes = snapshot.data!;
+                    return Expanded(
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: apropriacoes.map((apropriacao) {
+                          return Card(
+                            elevation: 3,
+                            margin: EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            child: ListTile(
+                              title: Text('Apropriação ${apropriacao['id']}'),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                      'Data inicial: ${apropriacao['data_hora_inicial']}'),
+                                  Text(
+                                      'Data final: ${apropriacao['data_hora_final']}'),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
