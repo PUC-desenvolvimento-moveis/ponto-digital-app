@@ -6,22 +6,21 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'nav.dart';
 
-
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: HomePageApp(name: 'Nome do Usuário'),
+      home: HomePageApp(email: 'nome do usuario'),
     );
   }
 }
 
 class HomePageApp extends StatefulWidget {
-  final String name;
+  final String email;
 
-  const HomePageApp({Key? key, required this.name}) : super(key: key);
+  const HomePageApp({Key? key, required this.email}) : super(key: key);
 
   @override
   _HomePageAppState createState() => _HomePageAppState();
@@ -33,18 +32,50 @@ class _HomePageAppState extends State<HomePageApp> {
   Stopwatch? _stopwatch;
   List<String> _journeyHistory = [];
   late SharedPreferences _prefs;
+  late String _userName;
 
   @override
   void initState() {
     super.initState();
     _stopwatch = Stopwatch();
+    _fetchUserDetails(widget.email);
+  }
+
+  Future<void> _fetchUserDetails(String email) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('authToken');
+    
+    if (token == null) {
+      _showErrorSnackBar(context, 'Erro: Token de autenticação não encontrado.');
+      return;
+    }
+
+    final urlByEmail = 'http://localhost:8000/api/users/byemail/$email';
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token'
+    };
+
+    try {
+      final response = await http.get(Uri.parse(urlByEmail), headers: headers);
+      if (response.statusCode == 201) {
+        final responseData = json.decode(response.body);
+        setState(() {
+          _userName = responseData['name'];
+        });
+      } else {
+        _showErrorSnackBar(context, 'Erro ao buscar o usuário.');
+      }
+    } catch (error) {
+      _showErrorSnackBar(context, 'Erro de rede: $error');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Bem-vindo, ${widget.name}'),
+        title: Text('Bem-vindo, $_userName'),
         backgroundColor: Colors.blue,
         actions: <Widget>[
           IconButton(
@@ -55,7 +86,7 @@ class _HomePageAppState extends State<HomePageApp> {
           ),
         ],
       ),
-      drawer: AppDrawer(), // Adicionando o Drawer aqui
+      drawer: AppDrawer(email: widget.email), // Adicionando o Drawer aqui
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -70,7 +101,7 @@ class _HomePageAppState extends State<HomePageApp> {
                 } else {
                   _stopwatch!.start();
                   _journeyHistory.add('Entrada: ${_getCurrentDateTime()}');
-                  apropriar_hora_inicial(context, widget.name);
+                  apropriar_hora_inicial(context, widget.email);
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -141,7 +172,7 @@ class _HomePageAppState extends State<HomePageApp> {
     Navigator.pushReplacementNamed(context, '/');
   }
 
-  Future<void> apropriar_hora_inicial(BuildContext context, String name) async {
+  Future<void> apropriar_hora_inicial(BuildContext context, String email) async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       String? token = prefs.getString('authToken'); // Retrieve the token
@@ -154,7 +185,7 @@ class _HomePageAppState extends State<HomePageApp> {
       }
 
       int userId = 0;
-      final urlByEmail = 'http://localhost:8000/api/users/byemail/$name';
+      final urlByEmail = 'http://localhost:8000/api/users/byemail/$email';
       final headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token' // Include the token in the headers
@@ -232,42 +263,28 @@ class _HomePageAppState extends State<HomePageApp> {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token' // Include the token in the headers
       };
-      final body = json.encode({'user_id': userId});
+      final responseApropriacaoFinal = await http.put(
+        Uri.parse(urlFinal),
+        headers: headers,
+        body: json.encode({'user_id': userId}),
+      );
 
-      final responseFinal =
-          await http.put(Uri.parse(urlFinal), headers: headers, body: body);
+      print('Apropriar Final response status: ${responseApropriacaoFinal.statusCode}');
+      print('Apropriar Final response body: ${responseApropriacaoFinal.body}');
 
-      print('Apropriar Final response status: ${responseFinal.statusCode}');
-      print('Apropriar Final response body: ${responseFinal.body}');
-
-      if (responseFinal.statusCode == 201) {
-        // Handle successful final appropriation
+      if (responseApropriacaoFinal.statusCode == 201) {
         _showSuccessSnackBar(
             context, 'Apropriação final realizada com sucesso!');
         setState(() {
           _isJourneyStarted = false;
         });
-
-        setState(() {
-          _ponto_final = false;
-        });
       } else {
-        // Handle final appropriation error
         _showErrorSnackBar(context, 'Erro ao realizar a apropriação final.');
       }
     } catch (error) {
       print('Apropriar Final error: $error');
       _showErrorSnackBar(context, 'Erro de rede: $error');
     }
-  }
-
-  void _showErrorSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
 
   void _showSuccessSnackBar(BuildContext context, String message) {
@@ -278,6 +295,13 @@ class _HomePageAppState extends State<HomePageApp> {
       ),
     );
   }
-}
 
-// Classe para o Drawer
+  void _showErrorSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+}

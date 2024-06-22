@@ -6,16 +6,24 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';  // Para trabalhar com JSO
 
 
-class PeriodPage extends StatelessWidget {
+class HorasApropriadasPorPeriodoPage extends StatelessWidget {
+  final String email;
+
+  HorasApropriadasPorPeriodoPage({required this.email});
+
   @override
   Widget build(BuildContext context) {
+    // Use o email para buscar os dados e renderizar a página
     return Scaffold(
       appBar: AppBar(
-        title: Text('Ver hora apropriada por período'),
+        title: Text('Horas Apropriadas por Período'),
       ),
       body: Center(
-        child: Text('Conteúdo da página de hora apropriada por período'),
+        child: Text('Email do usuário: $email'),
       ),
     );
   }
 }
+
+
+

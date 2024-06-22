@@ -6,15 +6,20 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';  // Para trabalhar com JSO
 
 
-class TotalHoursPage extends StatelessWidget {
+class TotalHorasApropriadasPage extends StatelessWidget {
+  final String email;
+
+  TotalHorasApropriadasPage({required this.email});
+
   @override
   Widget build(BuildContext context) {
+    // Use o email para buscar os dados e renderizar a página
     return Scaffold(
       appBar: AppBar(
-        title: Text('Ver horas totais apropriadas'),
+        title: Text('Total de Horas Apropriadas'),
       ),
       body: Center(
-        child: Text('Conteúdo da página de horas totais apropriadas'),
+        child: Text('Email do usuário: $email'),
       ),
     );
   }

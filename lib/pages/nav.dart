@@ -4,14 +4,16 @@ import 'home.dart';
 import 'register.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';  // Para trabalhar com JSO
-
-
 import 'total_horas_por_data.dart';
 import 'total_horas.dart';
 import 'total_horas_por_periodo.dart';
 
 
 class AppDrawer extends StatelessWidget {
+  final String email;
+
+  const AppDrawer({Key? key, required this.email}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -31,32 +33,38 @@ class AppDrawer extends StatelessWidget {
             ),
           ),
           ListTile(
-            leading: Icon(Icons.date_range),
-            title: Text('Ver hora apropriada por período'),
+            leading: Icon(Icons.calendar_today),
+            title: Text('Horas Apropriadas por Período'),
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => PeriodPage()),
+                MaterialPageRoute(
+                  builder: (context) => HorasApropriadasPorPeriodoPage(email: email),
+                ),
               );
             },
           ),
           ListTile(
-            leading: Icon(Icons.calendar_today),
-            title: Text('Ver hora apropriada por data'),
+            leading: Icon(Icons.date_range),
+            title: Text('Horas Apropriadas por Data'),
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => DatePage()),
+                MaterialPageRoute(
+                  builder: (context) => HorasApropriadasPorDataPage(email: email),
+                ),
               );
             },
           ),
           ListTile(
             leading: Icon(Icons.access_time),
-            title: Text('Ver horas totais apropriadas'),
+            title: Text('Total de Horas Apropriadas'),
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => TotalHoursPage()),
+                MaterialPageRoute(
+                  builder: (context) => TotalHorasApropriadasPage(email: email),
+                ),
               );
             },
           ),
