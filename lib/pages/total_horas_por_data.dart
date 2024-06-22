@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:timer_builder/timer_builder.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -44,7 +43,7 @@ class _HorasApropriadasPorDataPageState
 
   Future<String> _getTotalHoras() async {
     if (_dataSelecionada.isEmpty)
-      return '00:00:00'; // Evita chamadas desnecessárias
+      return '00:00'; // Evita chamadas desnecessárias
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('authToken');
     final headers = {
@@ -60,7 +59,13 @@ class _HorasApropriadasPorDataPageState
         headers: headers);
     final data = jsonDecode(response.body);
     print(data);
-    return data['total_horas_trabalhadas'];
+
+    // Formata a string para exibir apenas horas e minutos
+    String totalHoras = data['total_horas_trabalhadas'];
+    List<String> partes = totalHoras.split(':');
+    String horasEMinutos = '${partes[0]}:${partes[1]}';
+
+    return horasEMinutos;
   }
 
   Future<List<dynamic>> _getListaApropriacoesByData() async {
@@ -81,7 +86,7 @@ class _HorasApropriadasPorDataPageState
     final data = jsonDecode(response.body);
     print(data);
 
-       List<dynamic> apropriacoes = [];
+    List<dynamic> apropriacoes = [];
     if (data['lista_de_apropriacao'] is Map) {
       // Se a lista de apropriações for um objeto, transforma em uma lista
       apropriacoes = data['lista_de_apropriacao'].values.toList();
@@ -115,6 +120,7 @@ class _HorasApropriadasPorDataPageState
     return Scaffold(
       appBar: AppBar(
         title: Text('Horas Apropriadas por Data'),
+        backgroundColor: Colors.blue,
       ),
       body: Center(
         child: Column(
@@ -151,7 +157,20 @@ class _HorasApropriadasPorDataPageState
                 } else if (snapshot.hasError) {
                   return Text('Erro ao buscar total de horas');
                 } else {
-                  return Text('Total de horas: ${snapshot.data}');
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.access_time), // Ícone de relógio
+                      SizedBox(width: 5),
+                      Text(
+                        'Total de horas: ${snapshot.data}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  );
                 }
               },
             ),
@@ -181,7 +200,6 @@ class _HorasApropriadasPorDataPageState
                                   'Data inicial: ${apropriacao['data_hora_inicial']}'),
                               Text(
                                   'Data final: ${apropriacao['data_hora_final']}'),
-                              Text('Tipo: ${apropriacao['tipo']}'),
                             ],
                           ),
                         ),
