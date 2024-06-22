@@ -59,30 +59,48 @@ Future<String> _getTotalHoras() async {
   return data['total_horas_trabalhadas'];
 }
 
-  Future<List<dynamic>> _getListaApropriacoes() async { 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('authToken');
-    final headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token'
-    };
+ Future<List<dynamic>> _getListaApropriacoes() async { 
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? token = prefs.getString('authToken');
+  final headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $token'
+  };
 
-    final idUsuario = await _getIdUsuario(widget.email);
+  final idUsuario = await _getIdUsuario(widget.email);
 
-    final response = await http.get(
-        Uri.parse(
-            'http://localhost:8000/api/pontos/soma_minutos_trabalhados/$idUsuario'),
-        headers: headers);
-    final data = jsonDecode(response.body);
-    print(data);
+  final response = await http.get(
+    Uri.parse('http://localhost:8000/api/pontos/soma_minutos_trabalhados/$idUsuario'),
+    headers: headers,
+  );
+  final data = jsonDecode(response.body);
+  print(data);
 
-    if (data['lista_de_apropriacao'] is Map) {
-      // Se a lista de apropriações for um objeto, transforma em uma lista
-      return data['lista_de_apropriacao'].values.toList();
-    } else {
-      return data['lista_de_apropriacao'];
-    }
+  List<dynamic> apropriacoes = [];
+  if (data['lista_de_apropriacao'] is Map) {
+    // Se a lista de apropriações for um objeto, transforma em uma lista
+    apropriacoes = data['lista_de_apropriacao'].values.toList();
+  } else {
+    apropriacoes = data['lista_de_apropriacao'];
   }
+
+  // Subtrair 3 horas dos valores de data_hora_inicial e data_hora_final
+  for (var apropriacao in apropriacoes) {
+    // Parse dos valores de data e hora para DateTime
+    DateTime dataHoraInicial = DateTime.parse(apropriacao['data_hora_inicial']);
+    DateTime dataHoraFinal = DateTime.parse(apropriacao['data_hora_final']);
+
+    // Subtrair 3 horas
+    dataHoraInicial = dataHoraInicial.subtract(Duration(hours: 3));
+    dataHoraFinal = dataHoraFinal.subtract(Duration(hours: 3));
+
+    // Formatar de volta para string no formato desejado
+    apropriacao['data_hora_inicial'] = DateFormat('yyyy-MM-dd HH:mm:ss').format(dataHoraInicial);
+    apropriacao['data_hora_final'] = DateFormat('yyyy-MM-dd HH:mm:ss').format(dataHoraFinal);
+  }
+
+  return apropriacoes;
+}
 
   @override
   Widget build(BuildContext context) {

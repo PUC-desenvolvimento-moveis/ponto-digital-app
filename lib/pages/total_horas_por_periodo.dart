@@ -25,7 +25,7 @@ class _HorasApropriadasPorPeriodoPageState
   void initState() {
     super.initState();
     _dataSelecionada_inicial = ""; // Inicializa sem data selecionada
-    late String _dataSelecionada_final="";
+    late String _dataSelecionada_final = "";
     _totalHorasFuture = Future.value(""); // Inicializa com um future vazio
   }
 
@@ -56,7 +56,8 @@ class _HorasApropriadasPorPeriodoPageState
     final idUsuario = await _getIdUsuario(widget.email);
     final formattedDate =
         _dataSelecionada_inicial.substring(0, 10); // Ajuste conforme necessário
-       final formattedDate_final =  _dataSelecionada_final.substring(0, 10); // Ajuste conforme necessário
+    final formattedDate_final =
+        _dataSelecionada_final.substring(0, 10); // Ajuste conforme necessário
     final response = await http.get(
         Uri.parse(
             'http://localhost:8000/api/pontos/soma_minutos_trabalhados_por_periodo/$idUsuario/$formattedDate/$formattedDate_final'),
@@ -66,8 +67,9 @@ class _HorasApropriadasPorPeriodoPageState
     return data['total_horas_trabalhadas'];
   }
 
-  Future<List<dynamic>> _getListaApropriacoesByData() async {
-    if (_dataSelecionada_inicial.isEmpty && _dataSelecionada_final.isEmpty) return []; // Evita chamadas desnecessárias
+  Future<List<dynamic>> _getListaApropriacoesByPeriodo() async {
+    if (_dataSelecionada_inicial.isEmpty && _dataSelecionada_final.isEmpty)
+      return []; // Evita chamadas desnecessárias
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('authToken');
     final headers = {
@@ -77,7 +79,8 @@ class _HorasApropriadasPorPeriodoPageState
     final idUsuario = await _getIdUsuario(widget.email);
     final formattedDate =
         _dataSelecionada_inicial.substring(0, 10); // Ajuste conforme necessário
-         final formattedDate_final =  _dataSelecionada_final.substring(0, 10); // Ajuste conforme necessário
+    final formattedDate_final =
+        _dataSelecionada_final.substring(0, 10); // Ajuste conforme necessário
     final response = await http.get(
         Uri.parse(
             'http://localhost:8000/api/pontos/soma_minutos_trabalhados_por_periodo/$idUsuario/$formattedDate/$formattedDate_final'),
@@ -85,12 +88,33 @@ class _HorasApropriadasPorPeriodoPageState
     final data = jsonDecode(response.body);
     print(data);
 
+    List<dynamic> apropriacoes = [];
     if (data['lista_de_apropriacao'] is Map) {
       // Se a lista de apropriações for um objeto, transforma em uma lista
-      return data['lista_de_apropriacao'].values.toList();
+      apropriacoes = data['lista_de_apropriacao'].values.toList();
     } else {
-      return data['lista_de_apropriacao'];
+      apropriacoes = data['lista_de_apropriacao'];
     }
+
+    // Subtrair 3 horas dos valores de data_hora_inicial e data_hora_final
+    for (var apropriacao in apropriacoes) {
+      // Parse dos valores de data e hora para DateTime
+      DateTime dataHoraInicial =
+          DateTime.parse(apropriacao['data_hora_inicial']);
+      DateTime dataHoraFinal = DateTime.parse(apropriacao['data_hora_final']);
+
+      // Subtrair 3 horas
+      dataHoraInicial = dataHoraInicial.subtract(Duration(hours: 3));
+      dataHoraFinal = dataHoraFinal.subtract(Duration(hours: 3));
+
+      // Formatar de volta para string no formato desejado
+      apropriacao['data_hora_inicial'] =
+          DateFormat('yyyy-MM-dd HH:mm:ss').format(dataHoraInicial);
+      apropriacao['data_hora_final'] =
+          DateFormat('yyyy-MM-dd HH:mm:ss').format(dataHoraFinal);
+    }
+
+    return apropriacoes;
   }
 
   @override
@@ -115,9 +139,8 @@ class _HorasApropriadasPorPeriodoPageState
                 ).then((value) {
                   if (value != null) {
                     setState(() {
-                      _dataSelecionada_inicial =
-                          value.toString();
-                           // Atualiza a data selecionada
+                      _dataSelecionada_inicial = value.toString();
+                      // Atualiza a data selecionada
                       _totalHorasFuture =
                           _getTotalHoras(); // Recalcula as horas com base na nova data
                     });
@@ -137,9 +160,8 @@ class _HorasApropriadasPorPeriodoPageState
                 ).then((value) {
                   if (value != null) {
                     setState(() {
-                      _dataSelecionada_final =
-                          value.toString();
-                           // Atualiza a data selecionada
+                      _dataSelecionada_final = value.toString();
+                      // Atualiza a data selecionada
                       _totalHorasFuture =
                           _getTotalHoras(); // Recalcula as horas com base na nova data
                     });
@@ -148,7 +170,7 @@ class _HorasApropriadasPorPeriodoPageState
               },
               child: Text('Selecionar Data Final'),
             ),
-             SizedBox(height: 20),
+            SizedBox(height: 20),
             FutureBuilder<String>(
               future: _totalHorasFuture,
               builder: (context, snapshot) {
@@ -163,46 +185,45 @@ class _HorasApropriadasPorPeriodoPageState
             ),
             SizedBox(height: 20),
             FutureBuilder<List<dynamic>>(
-              future: _getListaApropriacoesByData(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
-                } else if (snapshot.hasError) {
-                  return Text('Erro ao buscar lista de apropriações');
-                } else {
-                  List<dynamic> apropriacoes = snapshot.data!;
-                  return ListView(
-                    shrinkWrap: true,
-                    children: apropriacoes.map((apropriacao) {
-                      return Card(
-                        elevation: 3,
-                        margin:
-                            EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        child: ListTile(
-                          title: Text('Apropriação ${apropriacao['id']}'),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Text(
-                                  'Data inicial: ${apropriacao['data_hora_inicial']}'),
-                              Text(
-                                  'Data final: ${apropriacao['data_hora_final']}'),
-                              Text('Tipo: ${apropriacao['tipo']}'),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  );
-                }
-              },
-            ),
+  future: _getListaApropriacoesByPeriodo(),
+  builder: (context, snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return CircularProgressIndicator();
+    } else if (snapshot.hasError) {
+      return Text('Erro ao buscar lista de apropriações');
+    } else {
+      List<dynamic> apropriacoes = snapshot.data!;
+      return Expanded(
+        child: ListView(
+          shrinkWrap: true,
+          children: apropriacoes.map((apropriacao) {
+            return Card(
+              elevation: 3,
+              margin:
+                  EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              child: ListTile(
+                title: Text('Apropriação ${apropriacao['id']}'),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                        'Data inicial: ${apropriacao['data_hora_inicial']}'),
+                    Text(
+                        'Data final: ${apropriacao['data_hora_final']}'),
+                    Text('Tipo: ${apropriacao['tipo']}'),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      );
+    }
+  },
+),
           ],
         ),
       ),
     );
   }
 }
-
-
-
