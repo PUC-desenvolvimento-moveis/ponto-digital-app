@@ -4,6 +4,19 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'nav.dart';
+
+
+void main() => runApp(MyApp());
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: HomePageApp(name: 'Nome do Usuário'),
+    );
+  }
+}
 
 class HomePageApp extends StatefulWidget {
   final String name;
@@ -28,7 +41,6 @@ class _HomePageAppState extends State<HomePageApp> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -43,6 +55,7 @@ class _HomePageAppState extends State<HomePageApp> {
           ),
         ],
       ),
+      drawer: AppDrawer(), // Adicionando o Drawer aqui
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -50,7 +63,7 @@ class _HomePageAppState extends State<HomePageApp> {
           children: <Widget>[
             ElevatedButton(
               onPressed: () {
-                if (_isJourneyStarted /* && !_ponto_final */) {
+                if (_isJourneyStarted) {
                   _stopwatch!.stop();
                   _journeyHistory.add('Saída: ${_getCurrentDateTime()}');
                   apropriar_hora_final(context);
@@ -127,10 +140,6 @@ class _HomePageAppState extends State<HomePageApp> {
   void _logout(BuildContext context) {
     Navigator.pushReplacementNamed(context, '/');
   }
-
-/*   void _saveJourneyHistory() {
-    _prefs.setStringList('journeyHistory', _journeyHistory);
-  } */
 
   Future<void> apropriar_hora_inicial(BuildContext context, String name) async {
     try {
@@ -254,13 +263,21 @@ class _HomePageAppState extends State<HomePageApp> {
 
   void _showErrorSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
     );
   }
 
   void _showSuccessSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.green),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+      ),
     );
   }
 }
+
+// Classe para o Drawer
