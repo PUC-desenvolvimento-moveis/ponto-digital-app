@@ -99,8 +99,6 @@ class _HorasApropriadasPorDataPageState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text('Email do usuário: ${widget.email}'),
-            SizedBox(height: 20),
             Text('Escolha a data:'),
             SizedBox(height: 10),
             ElevatedButton(

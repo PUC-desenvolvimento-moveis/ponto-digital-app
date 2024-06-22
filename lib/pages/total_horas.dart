@@ -20,47 +20,46 @@ class _TotalHorasApropriadasPageState
  
   late Future<String> _totalHorasFuture;
 
-  @override
-  void initState() {
-    super.initState();
-    _totalHorasFuture = Future.value("");
-    _getIdUsuario(widget.email); // Inicializa com um future vazio
-    _getTotalHoras();
-  }
+ @override
+void initState() {
+  super.initState();
+  _totalHorasFuture = _getTotalHoras();
+}
 
-  Future<int> _getIdUsuario(String email) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('authToken');
-    final headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token'
-    };
-    final response = await http.get(
-        Uri.parse('http://localhost:8000/api/users/byemail/$email'),
-        headers: headers);
-    final data = jsonDecode(response.body);
-    print(data);
-    return data['id'];
-  }
+Future<int> _getIdUsuario(String email) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? token = prefs.getString('authToken');
+  final headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $token'
+  };
+  final response = await http.get(
+    Uri.parse('http://localhost:8000/api/users/byemail/$email'),
+    headers: headers,
+  );
+  final data = jsonDecode(response.body);
+  print(data);
+  return data['id'];
+}
 
-  Future<String> _getTotalHoras() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('authToken');
-    final headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token'
-    };
-    final idUsuario = await _getIdUsuario(widget.email);
-    final response = await http.get(
-        Uri.parse(
-            'http://localhost:8000/api/pontos/soma_minutos_trabalhados/$idUsuario'),
-        headers: headers);
-    final data = jsonDecode(response.body);
-    print(data);
-    return data['total_horas_trabalhadas'];
-  }
+Future<String> _getTotalHoras() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? token = prefs.getString('authToken');
+  final headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $token'
+  };
+  final idUsuario = await _getIdUsuario(widget.email);
+  final response = await http.get(
+    Uri.parse('http://localhost:8000/api/pontos/soma_minutos_trabalhados/$idUsuario'),
+    headers: headers,
+  );
+  final data = jsonDecode(response.body);
+  print(data);
+  return data['total_horas_trabalhadas'];
+}
 
-  Future<List<dynamic>> _getListaApropriacoesByData() async { 
+  Future<List<dynamic>> _getListaApropriacoes() async { 
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('authToken');
     final headers = {
@@ -89,15 +88,12 @@ class _TotalHorasApropriadasPageState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Horas Apropriadas por Data'),
+        title: Text('Suas apropriacoes'),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text('Email do usuário: ${widget.email}'),
-            SizedBox(height: 20),
-            SizedBox(height: 20),
             FutureBuilder<String>(
               future: _totalHorasFuture,
               builder: (context, snapshot) {
@@ -112,7 +108,7 @@ class _TotalHorasApropriadasPageState
             ),
             SizedBox(height: 20),
             FutureBuilder<List<dynamic>>(
-              future: _getListaApropriacoesByData(),
+              future: _getListaApropriacoes(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return CircularProgressIndicator();
