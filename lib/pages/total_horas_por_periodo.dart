@@ -20,6 +20,7 @@ class _HorasApropriadasPorPeriodoPageState
   late String _dataSelecionada_inicial;
   late String _dataSelecionada_final;
   late Future<String> _totalHorasFuture;
+  late Future<String> _msg;
 
   @override
   void initState() {
@@ -27,6 +28,7 @@ class _HorasApropriadasPorPeriodoPageState
     _dataSelecionada_inicial = ""; // Inicializa sem data selecionada
     _dataSelecionada_final = ""; // Inicializa sem data selecionada
     _totalHorasFuture = Future.value(""); // Inicializa com um future vazio
+    _msg = Future.value("");
   }
 
   Future<int> _getIdUsuario(String email) async {
@@ -42,6 +44,22 @@ class _HorasApropriadasPorPeriodoPageState
     final data = jsonDecode(response.body);
     print(data);
     return data['id'];
+  }
+
+  Future<String> _verify_horas_ponto_por_mes(double minutos_trabalhados) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('authToken');
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token'
+    };
+    final response = await http.get(
+        Uri.parse(
+            'http://localhost:8000/api/pontos/verify_horas_ponto_por_mes/$minutos_trabalhados'),
+        headers: headers);
+    final data = jsonDecode(response.body);
+    print(data);
+    return data['response'];
   }
 
   Future<String> _getTotalHoras() async {
@@ -65,12 +83,23 @@ class _HorasApropriadasPorPeriodoPageState
     final data = jsonDecode(response.body);
     print(data);
 
+    final msg = await _verify_horas_ponto_por_mes(
+        data['total_horas_trabalhadas_em_minutos']);
+    await prefs.setString('message_por_periodo', msg); // Save the token
+
     // Formata a string para exibir apenas horas e minutos
     String totalHoras = data['total_horas_trabalhadas'];
     List<String> partes = totalHoras.split(':');
     String horasEMinutos = '${partes[0]}:${partes[1]}';
 
     return horasEMinutos;
+  }
+
+  Future<String> _mensagem() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String msg = prefs.getString('message_por_periodo') ??
+        ''; // Valor padrão vazio se for null
+    return msg;
   }
 
   Future<List<dynamic>> _getListaApropriacoesByPeriodo() async {
@@ -123,7 +152,7 @@ class _HorasApropriadasPorPeriodoPageState
     return apropriacoes;
   }
 
-    @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -145,7 +174,9 @@ class _HorasApropriadasPorPeriodoPageState
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      Text('Selecione as datas:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text('Selecione as datas:',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
                       SizedBox(height: 10),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -161,7 +192,9 @@ class _HorasApropriadasPorPeriodoPageState
                                 if (value != null) {
                                   setState(() {
                                     _dataSelecionada_inicial = value.toString();
-                                    _totalHorasFuture = _getTotalHoras(); // Recalcula as horas com base na nova data
+                                    _totalHorasFuture = _getTotalHoras();
+                                    _msg =
+                                        _mensagem(); // Recalcula as horas com base na nova data
                                   });
                                 }
                               });
@@ -179,7 +212,8 @@ class _HorasApropriadasPorPeriodoPageState
                                 if (value != null) {
                                   setState(() {
                                     _dataSelecionada_final = value.toString();
-                                    _totalHorasFuture = _getTotalHoras(); // Recalcula as horas com base na nova data
+                                    _totalHorasFuture =
+                                        _getTotalHoras(); // Recalcula as horas com base na nova data
                                   });
                                 }
                               });
@@ -218,6 +252,35 @@ class _HorasApropriadasPorPeriodoPageState
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+                },
+              ),
+              FutureBuilder<String>(
+                future: _msg,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return Text('Erro ao carregar mensagem');
+                  } else {
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.access_time), // Ícone de relógio
+                        SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            '${snapshot.data}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow
+                                .ellipsis, // Adiciona '...' se o texto estiver muito longo
                           ),
                         ),
                       ],
