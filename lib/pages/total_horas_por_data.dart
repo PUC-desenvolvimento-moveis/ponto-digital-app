@@ -18,12 +18,14 @@ class _HorasApropriadasPorDataPageState
     extends State<HorasApropriadasPorDataPage> {
   late String _dataSelecionada;
   late Future<String> _totalHorasFuture;
+  late Future<String> _msg;
 
   @override
   void initState() {
     super.initState();
     _dataSelecionada = ""; // Inicializa sem data selecionada
     _totalHorasFuture = Future.value(""); // Inicializa com um future vazio
+    _msg = Future.value("");
   }
 
   Future<int> _getIdUsuario(String email) async {
@@ -39,6 +41,22 @@ class _HorasApropriadasPorDataPageState
     final data = jsonDecode(response.body);
     print(data);
     return data['id'];
+  }
+
+  Future<String> _verify_horas_ponto_por_dia(double minutos_trabalhados) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('authToken');
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token'
+    };
+    final response = await http.get(
+        Uri.parse(
+            'http://localhost:8000/api/pontos/verify_horas_ponto_por_dia/$minutos_trabalhados'),
+        headers: headers);
+    final data = jsonDecode(response.body);
+    print(data);
+    return data['response'];
   }
 
   Future<String> _getTotalHoras() async {
@@ -58,7 +76,10 @@ class _HorasApropriadasPorDataPageState
             'http://localhost:8000/api/pontos/soma_minutos_trabalhados_por_data/$idUsuario/$formattedDate'),
         headers: headers);
     final data = jsonDecode(response.body);
-    print(data);
+
+    final msg = await _verify_horas_ponto_por_dia(
+        data['total_horas_trabalhadas_em_minutos']);
+    await prefs.setString('message', msg); // Save the token
 
     // Formata a string para exibir apenas horas e minutos
     String totalHoras = data['total_horas_trabalhadas'];
@@ -66,6 +87,13 @@ class _HorasApropriadasPorDataPageState
     String horasEMinutos = '${partes[0]}:${partes[1]}';
 
     return horasEMinutos;
+  }
+
+  Future<String> _mensagem() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String msg =
+        prefs.getString('message') ?? ''; // Valor padrão vazio se for null
+    return msg;
   }
 
   Future<List<dynamic>> _getListaApropriacoesByData() async {
@@ -124,90 +152,131 @@ class _HorasApropriadasPorDataPageState
       ),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-            Text('Escolha a data:'),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () {
-                showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                ).then((value) {
-                  if (value != null) {
-                    setState(() {
-                      _dataSelecionada =
-                          value.toString(); // Atualiza a data selecionada
-                      _totalHorasFuture =
-                          _getTotalHoras(); // Recalcula as horas com base na nova data
-                    });
-                  }
-                });
-              },
-              child: Text('Selecionar Data'),
-            ),
-            SizedBox(height: 20),
-            FutureBuilder<String>(
-              future: _totalHorasFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
-                } else if (snapshot.hasError) {
-                  return Text('Erro ao buscar total de horas');
-                } else {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.access_time), // Ícone de relógio
-                      SizedBox(width: 5),
-                      Text(
-                        'Total de horas: ${snapshot.data}',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  );
-                }
-              },
-            ),
-            SizedBox(height: 20),
-            FutureBuilder<List<dynamic>>(
-              future: _getListaApropriacoesByData(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
-                } else if (snapshot.hasError) {
-                  return Text('Erro ao buscar lista de apropriações');
-                } else {
-                  List<dynamic> apropriacoes = snapshot.data!;
-                  return ListView(
-                    shrinkWrap: true,
-                    children: apropriacoes.map((apropriacao) {
-                      return Card(
-                        elevation: 3,
-                        margin:
-                            EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        child: ListTile(
-                          title: Text('Apropriação ${apropriacao['id']}'),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
+            Card(
+              margin: EdgeInsets.all(10),
+              elevation: 4,
+              child: Padding(
+                padding: EdgeInsets.all(10),
+                child: Column(
+                  children: <Widget>[
+                    Text(
+                      'Escolha a data:',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: () {
+                        showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        ).then((value) {
+                          if (value != null) {
+                            setState(() {
+                              _dataSelecionada = value.toString();
+                              _totalHorasFuture = _getTotalHoras();
+                              _msg = _mensagem();
+                            });
+                          }
+                        });
+                      },
+                      child: Text('Selecionar Data'),
+                    ),
+                    SizedBox(height: 10),
+                    FutureBuilder<String>(
+                      future: _totalHorasFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        } else if (snapshot.hasError) {
+                          return Text('Erro ao buscar total de horas');
+                        } else {
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.access_time),
+                              SizedBox(width: 5),
                               Text(
-                                  'Data inicial: ${apropriacao['data_hora_inicial']}'),
-                              Text(
-                                  'Data final: ${apropriacao['data_hora_final']}'),
+                                'Total de horas: ${snapshot.data}',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ],
+                          );
+                        }
+                      },
+                    ),
+                    FutureBuilder<String>(
+                      future: _msg,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        } else if (snapshot.hasError) {
+                          return Text('Erro ao carregar resposta');
+                        } else {
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.access_time),
+                              SizedBox(width: 5),
+                              Text(
+                                '${snapshot.data}',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            Expanded(
+              child: FutureBuilder<List<dynamic>>(
+                future: _getListaApropriacoesByData(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return Text('Erro ao buscar lista de apropriações');
+                  } else {
+                    List<dynamic> apropriacoes = snapshot.data!;
+                    return ListView(
+                      children: apropriacoes.map((apropriacao) {
+                        return Card(
+                          elevation: 3,
+                          margin:
+                              EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          child: ListTile(
+                            title: Text('Apropriação ${apropriacao['id']}'),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                    'Data inicial: ${DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.parse(apropriacao['data_hora_inicial']))}'),
+                                Text(
+                                    'Data final: ${DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.parse(apropriacao['data_hora_final']))}'),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    }).toList(),
-                  );
-                }
-              },
+                        );
+                      }).toList(),
+                    );
+                  }
+                },
+              ),
             ),
           ],
         ),

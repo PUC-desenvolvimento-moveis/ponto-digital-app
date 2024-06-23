@@ -198,11 +198,11 @@ class _TotalHorasApropriadasPageState
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: <Widget>[
-                                Text(
-                                    'Data inicial: ${apropriacao['data_hora_inicial']}'),
-                                Text(
-                                    'Data final: ${apropriacao['data_hora_final']}'),
-                              ],
+                                   Text(
+                                      'Data inicial: ${DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.parse(apropriacao['data_hora_inicial']))}'),
+                                  Text(
+                                      'Data final: ${DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.parse(apropriacao['data_hora_final']))}'),
+                                ],
                             ),
                           ),
                         );

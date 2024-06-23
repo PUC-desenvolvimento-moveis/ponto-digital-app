@@ -123,7 +123,7 @@ class _HorasApropriadasPorPeriodoPageState
     return apropriacoes;
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -131,53 +131,73 @@ class _HorasApropriadasPorPeriodoPageState
         backgroundColor: Colors.blue,
       ),
       body: Padding(
-        padding: const EdgeInsets.only(top: 16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              Text('Selecione as datas:'),
-              SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () {
-                  showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  ).then((value) {
-                    if (value != null) {
-                      setState(() {
-                        _dataSelecionada_inicial = value.toString();
-                        // Atualiza a data selecionada
-                        _totalHorasFuture =
-                            _getTotalHoras(); // Recalcula as horas com base na nova data
-                      });
-                    }
-                  });
-                },
-                child: Text('Selecionar Data Inicial'),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  ).then((value) {
-                    if (value != null) {
-                      setState(() {
-                        _dataSelecionada_final = value.toString();
-                        // Atualiza a data selecionada
-                        _totalHorasFuture =
-                            _getTotalHoras(); // Recalcula as horas com base na nova data
-                      });
-                    }
-                  });
-                },
-                child: Text('Selecionar Data Final'),
+              Card(
+                elevation: 5,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      Text('Selecione as datas:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () {
+                              showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2100),
+                              ).then((value) {
+                                if (value != null) {
+                                  setState(() {
+                                    _dataSelecionada_inicial = value.toString();
+                                    _totalHorasFuture = _getTotalHoras(); // Recalcula as horas com base na nova data
+                                  });
+                                }
+                              });
+                            },
+                            child: Text('Data Inicial'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2100),
+                              ).then((value) {
+                                if (value != null) {
+                                  setState(() {
+                                    _dataSelecionada_final = value.toString();
+                                    _totalHorasFuture = _getTotalHoras(); // Recalcula as horas com base na nova data
+                                  });
+                                }
+                              });
+                            },
+                            child: Text('Data Final'),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        'Data Inicial: ${_dataSelecionada_inicial.isEmpty ? "Não selecionada" : DateFormat('dd/MM/yyyy').format(DateTime.parse(_dataSelecionada_inicial))}',
+                      ),
+                      Text(
+                        'Data Final: ${_dataSelecionada_final.isEmpty ? "Não selecionada" : DateFormat('dd/MM/yyyy').format(DateTime.parse(_dataSelecionada_final))}',
+                      ),
+                    ],
+                  ),
+                ),
               ),
               SizedBox(height: 20),
               FutureBuilder<String>(
@@ -206,6 +226,7 @@ class _HorasApropriadasPorPeriodoPageState
                 },
               ),
               SizedBox(height: 20),
+              SizedBox(height: 20),
               FutureBuilder<List<dynamic>>(
                 future: _getListaApropriacoesByPeriodo(),
                 builder: (context, snapshot) {
@@ -229,9 +250,9 @@ class _HorasApropriadasPorPeriodoPageState
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
                                   Text(
-                                      'Data inicial: ${apropriacao['data_hora_inicial']}'),
+                                      'Data inicial: ${DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.parse(apropriacao['data_hora_inicial']))}'),
                                   Text(
-                                      'Data final: ${apropriacao['data_hora_final']}'),
+                                      'Data final: ${DateFormat('dd/MM/yyyy HH:mm:ss').format(DateTime.parse(apropriacao['data_hora_final']))}'),
                                 ],
                               ),
                             ),
